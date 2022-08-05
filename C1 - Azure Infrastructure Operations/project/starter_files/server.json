@@ -1,8 +1,8 @@
 {
 	"variables": {
-		"client_id": "{{env `ARM_CLIENT_ID`}}",
-		"client_secret": "{{env `ARM_CLIENT_SECRET`}}",
-		"subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}"
+		"client_id": "54a3e8a1-c374-49e2-aeea-947d6595544f",
+		"client_secret": "rZ48Q~iDP.w3hK3jzN1wt0NAtM80scKi9lP7bcPP",
+		"subscription_id": "910fc539-3c29-4162-aeb4-18611f1f1450"
 	},
 	"builders": [{
 		"type": "azure-arm",
@@ -16,11 +16,11 @@
 		"image_offer": "UbuntuServer",
 		"image_sku": "18.04-LTS",
 	
-		"managed_image_resource_group_name": "packer-rg",
+		"managed_image_resource_group_name": "myResourceGroup",
 		"managed_image_name": "myPackerImage",
 	
 		"location": "East US",
-		"vm_size": "Standard_A2"
+		"vm_size": "Standard_DS2_v2"
 		
 	}],
 	"provisioners": [{
