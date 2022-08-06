@@ -7,7 +7,7 @@
         },
         {
           "field": "[concat('tags[', parameters('tagName'), ']')]",
-          "notEquals": "[parameters('tagValue')]"
+          "exists": "false"
         }
       ]
     },
@@ -19,7 +19,7 @@
         ],
         "operations": [
           {
-            "operation": "addOrReplace",
+            "operation": "add",
             "field": "[concat('tags[', parameters('tagName'), ']')]",
             "value": "[parameters('tagValue')]"
           }
