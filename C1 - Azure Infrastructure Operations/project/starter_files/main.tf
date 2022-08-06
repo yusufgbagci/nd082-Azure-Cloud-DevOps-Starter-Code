@@ -19,7 +19,7 @@ resource "azurerm_subnet" "internal" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
-
+}
 resource "azurerm_network_interface" "main" {
   name                = "${var.prefix}-nic"
   resource_group_name = azurerm_resource_group.main.name
@@ -34,21 +34,16 @@ resource "azurerm_network_interface" "main" {
 
 resource "azurerm_lb" "example" {
   name                = "TestLoadBalancer"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
-  frontend_ip_configuration {
-    name                 = "PublicIPAddress"
-    public_ip_address_id = azurerm_public_ip.example.id
-  }
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 }
 resource "azurerm_linux_virtual_machine" "main" {
   name                            = "${var.prefix}-vm"
   resource_group_name             = azurerm_resource_group.main.name
   location                        = azurerm_resource_group.main.location
   size                            = "Standard_D2s_v3"
-  admin_username                  = "${var.username}"
-  admin_password                  = "${var.password}"
+  admin_username                  = "bagci4852@gmail.com"
+  admin_password                  = "Albay.6544"
   disable_password_authentication = false
   network_interface_ids = [
     azurerm_network_interface.main.id,
