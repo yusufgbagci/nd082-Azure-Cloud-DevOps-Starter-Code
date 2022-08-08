@@ -1,29 +1,39 @@
+# Configure the Microsoft Azure Provider
 provider "azurerm" {
+
   features {}
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "cloud-shell-storage-westeurope"
-  location = "West Europe"
+# Locate the existing resource group
+data "azurerm_resource_group" "main" {
+  name = "Azuredevops"
 }
 
-data "azurerm_image" "main" {
-  name                = "myPackerImageNew"
-  resource_group_name = "cloud-shell-storage-westeurope"
+output "id" {
+  value = data.azurerm_resource_group.main.id
 }
+
+# Locate the existing custom image
+data "azurerm_image" "main" {
+  name                = "myPackerImage"
+  resource_group_name = "Azuredevops"
+}
+
 output "image_id" {
-  value = "/subscriptions/910fc539-3c29-4162-aeb4-18611f1f1450/resourceGroups/cloud-shell-storage-westeurope/providers/Microsoft.Compute/images/myPackerImageNew"
+  value = "/subscriptions/752715f5-df31-4865-845f-8d57d11fdf13/resourceGroups/Azuredevops/providers/Microsoft.Compute/images/myPackerImage"
 }
 
 locals {
   instance_count = 2
 }
+
+# Create a Network Security Group with some rules
 resource "azurerm_network_security_group" "main" {
   name                = "${var.prefix}-SG"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
   security_rule {
-    name                       = "Udacity"
+    name                       = "my-SGR"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
@@ -35,33 +45,40 @@ resource "azurerm_network_security_group" "main" {
   }
   tags = var.tags
 }
+
+# Create virtual network
 resource "azurerm_virtual_network" "main" {
   name                = "${var.prefix}-network"
-  address_space       = ["10.0.0.0/22"]
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  address_space       = ["10.0.0.0/16"]
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
   tags = var.tags
 }
 
+# Create subnet
 resource "azurerm_subnet" "main" {
   name                 = "${var.prefix}-subnet"
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = data.azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
+# Create public IP
 resource "azurerm_public_ip" "main" {
   name                = "${var.prefix}-pip"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
   allocation_method   = "Static"
 
   tags = var.tags
 }
+
+# Create a Load Balancer, Your load balancer will need a backend pool and address pool 
+# assciated for the network interface and the load balancer
 resource "azurerm_lb" "main" {
   name                = "${var.prefix}-lb"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
 
   frontend_ip_configuration {
     name                 = "PublicIPAddress"
@@ -70,13 +87,15 @@ resource "azurerm_lb" "main" {
 
   tags = var.tags
 }
+
+# Load balancer backend pool
 resource "azurerm_lb_backend_address_pool" "main" {
   loadbalancer_id     = azurerm_lb.main.id
   name                = "BackEndAddressPool"
 }
 
 resource "azurerm_lb_nat_rule" "main" {
-  resource_group_name            = azurerm_resource_group.main.name
+  resource_group_name            = data.azurerm_resource_group.main.name
   loadbalancer_id                = azurerm_lb.main.id
   name                           = "HTTPSAccess"
   protocol                       = "Tcp"
@@ -95,8 +114,8 @@ resource "azurerm_network_interface_backend_address_pool_association" "main" {
 # Create a virtual machine availability set
 resource "azurerm_availability_set" "avset" {
   name                           = "${var.prefix}avset"
-  location                       = azurerm_resource_group.main.location
-  resource_group_name            = azurerm_resource_group.main.name
+  location                       = data.azurerm_resource_group.main.location
+  resource_group_name            = data.azurerm_resource_group.main.name
   platform_fault_domain_count    = 2
   platform_update_domain_count   = 2
   managed                        = true
@@ -107,8 +126,8 @@ resource "azurerm_availability_set" "avset" {
 resource "azurerm_network_interface" "main" {
   count                          = var.vm_count
   name                           = "${var.prefix}-${count.index}-nic"
-  location                       = azurerm_resource_group.main.location
-  resource_group_name            = azurerm_resource_group.main.name
+  location                       = data.azurerm_resource_group.main.location
+  resource_group_name            = data.azurerm_resource_group.main.name
 
   ip_configuration {
     name                          = "primary"
@@ -118,11 +137,12 @@ resource "azurerm_network_interface" "main" {
   tags = var.tags
 }
 
+# Create a new Virtual Machine based on the custom Image
 resource "azurerm_virtual_machine" "main" {
-  count                            = var.vm_count 
+  count                            = var.vm_count # Count Value read from variable
   name                             = "${var.prefix}VM-${count.index}"
-  location                         = azurerm_resource_group.main.location
-  resource_group_name              = azurerm_resource_group.main.name
+  location                         = data.azurerm_resource_group.main.location
+  resource_group_name              = data.azurerm_resource_group.main.name
   availability_set_id              = azurerm_availability_set.avset.id
   network_interface_ids = [
     azurerm_network_interface.main[count.index].id,
@@ -144,8 +164,8 @@ resource "azurerm_virtual_machine" "main" {
 
   os_profile {
     computer_name  = "APPVM"
-    admin_username = "bagci4852@gmail.com"
-    admin_password = "Albay.6544"
+    admin_username = "var.admin_username"
+    admin_password = "Cssladmin#2019"
   }
 
   os_profile_linux_config {
