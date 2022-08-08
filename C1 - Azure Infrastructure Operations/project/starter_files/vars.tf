@@ -11,7 +11,7 @@ variable "location" {
 
 variable "vm_count" {
   description = "Number of Virtual Machines"
-  
+  default     = "2"
 }
 
 
